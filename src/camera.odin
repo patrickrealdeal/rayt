@@ -1,13 +1,12 @@
 package main
 
 Camera :: struct {
-    image_height: int,
-    image_width: int,
+    image_height, image_width: int,
     aspect_ratio: f64,
     center: Vec3,
     pixel00_loc: Vec3,
     pixel_delta_v, pixel_delta_u: Vec3,
-    samples: int,
+    samples, depth: int,
 }
 
 camera_init :: proc(aspect_ratio: f64, image_width, image_height: int) -> Camera {
@@ -16,7 +15,6 @@ camera_init :: proc(aspect_ratio: f64, image_width, image_height: int) -> Camera
     cam.image_height = 1 if image_height < 1 else image_height
 
     cam.center = Vec3{0,0,0}
-    cam.samples = 100
 
     // Determine viewport dimensions
     focal_length := 1.0

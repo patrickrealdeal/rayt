@@ -6,25 +6,27 @@ Hit_Record :: struct {
     p: Vec3,
     normal: Vec3,
     t: f64,
+    material: ^Material,
     front_face: bool,
 }
 
 Hittable :: struct {
     type: union { ^Sphere },
+    material: ^Material,
 }
 
 Sphere :: struct {
     using _base: Hittable,
     center: Vec3,
     radius: f64,
-
 }
 
-sphere_init :: proc(center: Vec3, radius: f64) -> ^Sphere {
+sphere_init :: proc(center: Vec3, radius: f64, mat: ^Material) -> ^Sphere {
     sphere := new(Sphere)
     sphere.type = sphere
     sphere.center = center
     sphere.radius = radius
+    sphere.material = mat
     return sphere
 }
 
@@ -57,6 +59,7 @@ sphere_collision :: proc(sphere: ^Sphere, r: ^Ray, t_min, t_max: f64) -> (bool, 
     rec.p = ray_at(r, rec.t)
     outward_normal := vec_unit((rec.p - sphere.center) / sphere.radius)
     record_set_front_face_normal(&rec, r, outward_normal)
+    rec.material = sphere.material
     hit = true
 
     return hit, rec

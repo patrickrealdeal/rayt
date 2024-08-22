@@ -7,11 +7,18 @@ import "core:math"
 import "core:math/rand"
 import "core:strings"
 
-ray_color :: proc(r: ^Ray, world: []^Hittable) -> Vec3 {
+ray_color :: proc(r: ^Ray, world: []^Hittable, depth: int) -> Vec3 {
+    if depth <= 0 {
+        return Vec3{0,0,0}
+    }
+
     hit_record: Hit_Record
     if hit_any, rec := collision(world, r, 0.001, Infinity); hit_any {
-        return 0.5 * (rec.normal + Vec3{1,1,1})
-    }  
+        if ok, attenuation, scattered := material_scatter(rec.material, r, &rec); ok {
+            return attenuation * ray_color(&scattered, world, depth-1)
+        }
+        return Vec3{0,0,0}
+    }
 
     unit_direction := vec_unit(r.direction)
     a := 0.5 * (unit_direction.y + 1.0)
@@ -23,23 +30,18 @@ render :: proc(output: ^[]Vec3, world: []^Hittable, cam: ^Camera, image_width, i
         for x in 0..< image_width {
             color := Vec3{0,0,0}
             fmt.fprintf(os.stderr, "\rDrawing ... ")
+            current_line := image_height -y - 1;
+            percentage := 100.0 * (f64(image_height - current_line) / f64(image_height))
+            fmt.fprintf(os.stderr, "\rTracing rays:   {: 4d} / {: 4d} ({:.2f}%% done)...", current_line, image_height, percentage );
             for _ in 0..< cam.samples {
-                u := (f64(x) + rand.float64()) / f64(image_width  - 1);
-                v := (f64(y) + rand.float64()) / f64(image_height - 1);
                 r := camera_get_ray(cam, f64(x), f64(y))
-                color += ray_color(&r, world)
+                color += ray_color(&r, world, cam.depth)
             } 
-
-            //pixel_center := cam.pixel00_loc + (f64(x) * cam.pixel_delta_u) + (f64(y) * cam.pixel_delta_v)
-            //ray_direction := pixel_center - cam.center
-            //r := Ray{cam.center, ray_direction}
-            
-            //pixel_color := ray_color(&r, world)
-            //color += pixel_color
             scale := 1.0 / f64(cam.samples);
             output[y * image_width + x] = color * scale 
         }
     }
+    fmt.fprintf(os.stderr, "Done.\n")
 }
 
 main :: proc() {
@@ -49,7 +51,7 @@ main :: proc() {
     defer track_allocs(&track)
 
     // IMAGE
-    image_width := 400
+    image_width := 640
     aspect_ratio: f64 = 16.0 / 9.0
 
     // Calculate the image height and ensure is at least 1
@@ -59,17 +61,26 @@ main :: proc() {
     world := make([dynamic]^Hittable, 0, 10)
     defer {
         for h in world {
+            free(h.material)
             free(h)
         }
         delete(world)
     }
 
-    append(&world, sphere_init(Vec3{0, 0, -1}, 0.5))
-    append(&world, sphere_init(Vec3{-0.9, 0, -1.3}, 0.3))
-    append(&world, sphere_init(Vec3{0, -100.5, -1}, 100))
+    material_ground := material_new_lambertian(Vec3{0.8, 0.8, 0.0})
+    material_center := material_new_lambertian(Vec3{0.1, 0.2, 0.5})
+    material_left := material_new_metal(Vec3{0.8, 0.8, 0.8})
+    material_right := material_new_metal(Vec3{0.8, 0.6, 0.2})
+
+    append(&world, sphere_init(Vec3{ 0.0 , -100.5, -1.0 }, 100, material_ground))
+    append(&world, sphere_init(Vec3{ 0.0 , 0.0   , -1.2 }, 0.5, material_center))
+    append(&world, sphere_init(Vec3{ -1.0, 0.0   , -1.0 }, 0.5, material_left))
+    append(&world, sphere_init(Vec3{ 1.0 , 0.0   , -1.0 }, 0.5, material_right))
 
     // CAMERA
     cam := camera_init(aspect_ratio, image_width, image_height)
+    cam.samples = 100
+    cam.depth = 50
     
     // RENDER
     output := make([]Vec3, image_width * image_height)
@@ -77,6 +88,14 @@ main :: proc() {
     
     render(&output, world[:], &cam, image_width, image_height)
     output_to_ppm(output, image_width, image_height)
+}
+
+linear_to_gamma :: proc(linear_component: f64) -> f64 {
+    if linear_component > 0 { 
+        return math.sqrt(linear_component)
+    }
+
+    return 0
 }
 
 output_to_ppm :: proc(output: []Vec3, image_width, image_height: int) {
@@ -90,6 +109,7 @@ output_to_ppm :: proc(output: []Vec3, image_width, image_height: int) {
         fmt.fprintf(os.stderr, "\rScan lines remaining: %v ", (image_height - y - 1))
         for x in 0 ..< image_width {
             c := output[y * image_width + x];
+            // r, g, b := linear_to_gamma(c.r), linear_to_gamma(c.g), linear_to_gamma(c.b)
             ir, ig, ib := int(256 * clamp(c.r, 0.0, 0.999)), int(256 * clamp(c.g, 0.0, 0.999)), int(256 * clamp(c.b, 0.0, 0.999));
             strings.write_string(&sb, fmt.tprintf("{} {} {}\n", ir, ig, ib));
         }
