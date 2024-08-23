@@ -12,7 +12,6 @@ ray_color :: proc(r: ^Ray, world: []^Hittable, depth: int) -> Vec3 {
         return Vec3{0,0,0}
     }
 
-    hit_record: Hit_Record
     if hit_any, rec := collision(world, r, 0.001, Infinity); hit_any {
         if ok, attenuation, scattered := material_scatter(rec.material, r, &rec); ok {
             return attenuation * ray_color(&scattered, world, depth-1)
@@ -69,8 +68,8 @@ main :: proc() {
 
     material_ground := material_new_lambertian(Vec3{0.8, 0.8, 0.0})
     material_center := material_new_lambertian(Vec3{0.1, 0.2, 0.5})
-    material_left := material_new_metal(Vec3{0.8, 0.8, 0.8})
-    material_right := material_new_metal(Vec3{0.8, 0.6, 0.2})
+    material_left := material_new_metal(Vec3{0.8, 0.8, 0.8}, 0.3)
+    material_right := material_new_metal(Vec3{0.8, 0.6, 0.2}, 1.0)
 
     append(&world, sphere_init(Vec3{ 0.0 , -100.5, -1.0 }, 100, material_ground))
     append(&world, sphere_init(Vec3{ 0.0 , 0.0   , -1.2 }, 0.5, material_center))

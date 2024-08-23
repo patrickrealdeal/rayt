@@ -2,7 +2,8 @@ SRC_DIR = src
 EXECUTABLE = rtiow
 OUTPUT_DIR = output
 IMAGE_FILE = $(OUTPUT_DIR)/image.ppm
-FLAGS = -o:none -debug -microarch:native -disable-assert -no-bounds-check
+FLAGS = -o:none -debug -microarch:native -disable-assert -no-bounds-check -minimum-os-version:10.13
+SPEED = -o:speed -microarch:native -disable-assert -no-bounds-check -minimum-os-version:10.13
 
 .PHONY: all build run time clean speed
 
@@ -16,7 +17,7 @@ run: build
 	@./$(EXECUTABLE) > $(IMAGE_FILE)
 
 speed:
-	@odin build $(SRC_DIR) -o:speed -debug -microarch:native -disable-assert -no-bounds-check -out:$(EXECUTABLE)
+	@odin build $(SRC_DIR) $(SPEED) -out:$(EXECUTABLE)
 	@time ./$(EXECUTABLE) > $(IMAGE_FILE)
 	
 
