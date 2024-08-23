@@ -14,7 +14,7 @@ camera_init :: proc(aspect_ratio: f64, image_width, image_height: int) -> Camera
     cam.image_height = image_height 
     cam.image_height = 1 if image_height < 1 else image_height
 
-    cam.center = Vec3{0,0,0}
+    cam.center = Vec3{0, 0, 0}
 
     // Determine viewport dimensions
     focal_length := 1.0
@@ -30,7 +30,7 @@ camera_init :: proc(aspect_ratio: f64, image_width, image_height: int) -> Camera
     cam.pixel_delta_v = viewport_v / f64(image_height)
 
     // Calculate the location of the upper left pixel
-    viewport_upper_left := cam.center - Vec3{0,0, focal_length} - viewport_u/2 - viewport_v/2
+    viewport_upper_left := cam.center - Vec3{0, 0, focal_length} - viewport_u/2 - viewport_v/2
     cam.pixel00_loc = viewport_upper_left + 0.5 * (cam.pixel_delta_u + cam.pixel_delta_v)
 
     return cam

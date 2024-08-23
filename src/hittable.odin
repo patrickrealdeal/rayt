@@ -95,7 +95,7 @@ collision_multi :: proc(hittable_list: []^Hittable, r: ^Ray, t_min, t_max: f64) 
 }
 
 record_set_front_face_normal :: #force_inline proc(record : ^Hit_Record, ray : ^Ray, outward_normal : Vec3) {
-    record.front_face = vec_dot(ray.direction, outward_normal) < 0;
-    record.normal = outward_normal if record.front_face else -outward_normal;
+    record.front_face = vec_dot(ray.direction, outward_normal) < 0
+    record.normal = outward_normal if record.front_face else -outward_normal
 }
 

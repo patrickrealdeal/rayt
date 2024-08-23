@@ -9,14 +9,14 @@ import "core:strings"
 
 ray_color :: proc(r: ^Ray, world: []^Hittable, depth: int) -> Vec3 {
     if depth <= 0 {
-        return Vec3{0,0,0}
+        return Vec3{0, 0, 0}
     }
 
-    if hit_any, rec := collision(world, r, 0.001, Infinity); hit_any {
+    if hit_any, rec := collision(world, r, 0.0001, Infinity); hit_any {
         if ok, attenuation, scattered := material_scatter(rec.material, r, &rec); ok {
             return attenuation * ray_color(&scattered, world, depth-1)
         }
-        return Vec3{0,0,0}
+        return Vec3{0, 0, 0}
     }
 
     unit_direction := vec_unit(r.direction)
@@ -27,16 +27,16 @@ ray_color :: proc(r: ^Ray, world: []^Hittable, depth: int) -> Vec3 {
 render :: proc(output: ^[]Vec3, world: []^Hittable, cam: ^Camera, image_width, image_height: int) {  
     for y in 0..< image_height {
         for x in 0..< image_width {
-            color := Vec3{0,0,0}
+            color := Vec3{0, 0, 0}
             fmt.fprintf(os.stderr, "\rDrawing ... ")
-            current_line := image_height -y - 1;
+            current_line := image_height -y - 1
             percentage := 100.0 * (f64(image_height - current_line) / f64(image_height))
-            fmt.fprintf(os.stderr, "\rTracing rays:   {: 4d} / {: 4d} ({:.2f}%% done)...", current_line, image_height, percentage );
+            fmt.fprintf(os.stderr, "\rTracing rays:   {: 4d} / {: 4d} ({:.2f}%% done)...", current_line, image_height, percentage )
             for _ in 0..< cam.samples {
                 r := camera_get_ray(cam, f64(x), f64(y))
                 color += ray_color(&r, world, cam.depth)
             } 
-            scale := 1.0 / f64(cam.samples);
+            scale := 1.0 / f64(cam.samples)
             output[y * image_width + x] = color * scale 
         }
     }
@@ -50,7 +50,7 @@ main :: proc() {
     defer track_allocs(&track)
 
     // IMAGE
-    image_width := 640
+    image_width := 420
     aspect_ratio: f64 = 16.0 / 9.0
 
     // Calculate the image height and ensure is at least 1
@@ -102,20 +102,20 @@ output_to_ppm :: proc(output: []Vec3, image_width, image_height: int) {
     strings.builder_init(&sb)
     defer strings.builder_destroy(&sb)
 
-    fmt.printf("P3\n{} {}\n255\n", image_width, image_height);
+    fmt.printf("P3\n{} {}\n255\n", image_width, image_height)
     for y in 0..< image_height {
-        current_line := image_height - y;
+        current_line := image_height - y
         fmt.fprintf(os.stderr, "\rScan lines remaining: %v ", (image_height - y - 1))
         for x in 0 ..< image_width {
-            c := output[y * image_width + x];
+            c := output[y * image_width + x]
             // r, g, b := linear_to_gamma(c.r), linear_to_gamma(c.g), linear_to_gamma(c.b)
-            ir, ig, ib := int(256 * clamp(c.r, 0.0, 0.999)), int(256 * clamp(c.g, 0.0, 0.999)), int(256 * clamp(c.b, 0.0, 0.999));
-            strings.write_string(&sb, fmt.tprintf("{} {} {}\n", ir, ig, ib));
+            ir, ig, ib := int(256 * clamp(c.r, 0.0, 0.999)), int(256 * clamp(c.g, 0.0, 0.999)), int(256 * clamp(c.b, 0.0, 0.999))
+            strings.write_string(&sb, fmt.tprintf("{} {} {}\n", ir, ig, ib))
         }
     }
 
-    fmt.print(strings.to_string(sb));
-    fmt.fprintf(os.stderr, "\rDone.                  \n");
+    fmt.print(strings.to_string(sb))
+    fmt.fprintf(os.stderr, "\rDone.                  \n")
 }
 
 track_allocs :: proc(track: ^mem.Tracking_Allocator) {
