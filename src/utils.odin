@@ -13,6 +13,18 @@ NegativeInfinity :: f64(0hfff0_0000_0000_0000)
 deg_to_radians :: #force_inline proc(deg: f64) -> f64 { return deg * (Pi / 180.0) }
 vec_is_near_zero :: proc(v : Vec3) -> bool { return v.x < 1e-8 && v.y < 1e-8 && v.z < 1e-8 }
 vec_reflect :: proc(v, n : Vec3) -> Vec3 { return v - 2 * vec_dot(v, n) * n }
+
+vec_refract :: proc { vec_refract_indices, vec_refract_ratio }
+vec_refract_indices :: proc(v, n: Vec3, refractive_index_1, refractive_index_2: f64) -> Vec3 {
+    return vec_refract_ratio(v, n, refractive_index_1 / refractive_index_2) 
+} 
+vec_refract_ratio :: proc(v, n: Vec3, refractive_ratio: f64) -> Vec3 {
+    cos_theta := min(vec_dot(-v, n), 1.0)
+    r_out_perpendicular := refractive_ratio * (v + cos_theta * n)
+    r_out_parallel := -math.sqrt(abs(1.0 - vec_len2(r_out_perpendicular))) * n
+    return r_out_perpendicular + r_out_parallel
+}
+
 vec_len2 :: proc(v: Vec3) -> f64 {
     return v.x*v.x + v.y*v.y + v.z*v.z
 }

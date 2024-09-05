@@ -47,7 +47,9 @@ main :: proc() {
     track: mem.Tracking_Allocator
     mem.tracking_allocator_init(&track, context.allocator)
     context.allocator = mem.tracking_allocator(&track)
-    defer track_allocs(&track)
+    when ODIN_DEBUG {
+        defer track_allocs(&track)
+    }
 
     // IMAGE
     image_width := 420
@@ -57,7 +59,7 @@ main :: proc() {
     image_height := int(f64(image_width) / aspect_ratio)
     
     // WORLD
-    world := make([dynamic]^Hittable, 0, 10)
+    world := make([dynamic]^Hittable, 0, 10, context.allocator)
     defer {
         for h in world {
             free(h.material)
@@ -68,7 +70,7 @@ main :: proc() {
 
     material_ground := material_new_lambertian(Vec3{0.8, 0.8, 0.0})
     material_center := material_new_lambertian(Vec3{0.1, 0.2, 0.5})
-    material_left := material_new_metal(Vec3{0.8, 0.8, 0.8}, 0.3)
+    material_left := material_new_dielectric(1.50)
     material_right := material_new_metal(Vec3{0.8, 0.6, 0.2}, 1.0)
 
     append(&world, sphere_init(Vec3{ 0.0 , -100.5, -1.0 }, 100, material_ground))
@@ -82,11 +84,11 @@ main :: proc() {
     cam.depth = 50
     
     // RENDER
-    output := make([]Vec3, image_width * image_height)
+    output := make([]Vec3, image_width * image_height, context.allocator)
     defer delete(output)
     
     render(&output, world[:], &cam, image_width, image_height)
-    output_to_ppm(output, image_width, image_height)
+    output_to_ppm(output, image_width, image_height, context.allocator)
 }
 
 linear_to_gamma :: proc(linear_component: f64) -> f64 {
@@ -97,9 +99,9 @@ linear_to_gamma :: proc(linear_component: f64) -> f64 {
     return 0
 }
 
-output_to_ppm :: proc(output: []Vec3, image_width, image_height: int) {
+output_to_ppm :: proc(output: []Vec3, image_width, image_height: int, allocator: mem.Allocator) {
     sb : strings.Builder
-    strings.builder_init(&sb)
+    strings.builder_init(&sb, allocator)
     defer strings.builder_destroy(&sb)
 
     fmt.printf("P3\n{} {}\n255\n", image_width, image_height)
